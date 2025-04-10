@@ -2,10 +2,18 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-
 import { useRouter } from "next/navigation";
 
-const FeatureCard = ({ icon, title, description, link, index }) => {
+// Define the props type for FeatureCard
+interface FeatureCardProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  link: string;
+  index: number;
+}
+
+const FeatureCard = ({ icon, title, description, link, index }: FeatureCardProps) => {
   const router = useRouter();
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
@@ -62,8 +70,16 @@ const FeatureCard = ({ icon, title, description, link, index }) => {
   );
 };
 
+// Define the feature type for the features array
+interface Feature {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  link: string;
+}
+
 const AdditionalFeaturesSection = () => {
-  const features = [
+  const features: Feature[] = [
     {
       title: "Support Causes",
       description: "Contribute to specific causes that align with your values and interests.",
@@ -131,7 +147,7 @@ const AdditionalFeaturesSection = () => {
       description: "Learn more about our mission, vision, and the impact we've made together.",
       icon: (
         <svg className="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" />
         </svg>
       ),
       link: "/volunteer"
