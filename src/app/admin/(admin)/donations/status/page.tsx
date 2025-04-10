@@ -178,7 +178,7 @@ function UpdateStatusContent() {
         throw new Error('Failed to update status');
       }
 
-      const updatedDonation: Donation = await response.json();
+      // const updatedDonation: Donation = await response.json();
 
       setDonation(prev => ({
         ...prev,

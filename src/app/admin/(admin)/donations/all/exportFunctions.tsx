@@ -92,7 +92,7 @@ const formatCurrency = (amount: string): string => {
     const value = parseFloat(numericValue);
     if (isNaN(value)) return amount;
     return `₹${value.toLocaleString('en-IN')}`;
-  } catch (e) {
+  } catch {
     return amount;
   }
 };

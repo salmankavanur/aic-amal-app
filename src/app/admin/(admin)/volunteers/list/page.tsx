@@ -124,7 +124,7 @@ export default function ListVolunteersPage() {
         <Trash2 className="mx-auto mb-4 w-12 h-12 text-red-500" />
         <h2 className="text-lg font-semibold mb-2">Delete Volunteer</h2>
         <p className="text-sm text-gray-600 mb-4">
-          Are you sure you want to delete "{volunteerName}"?
+          Are you sure you want to delete &quot;{volunteerName}&quot;?
         </p>
         <div className="flex justify-center space-x-3">
           <button 

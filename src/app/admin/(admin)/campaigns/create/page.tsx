@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image"; // Add this import
 import {
   ArrowLeft,
   Calendar,
@@ -150,12 +151,9 @@ export default function CreateCampaignPage() {
     try {
       const formDataToSend = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
-        // For file upload
         if (key === "featuredImage" && value) {
           formDataToSend.append(key, value);
-        }
-        // For all other fields
-        else if (value !== null && value !== undefined) {
+        } else if (value !== null && value !== undefined) {
           formDataToSend.append(key, value.toString());
         }
       });
@@ -163,7 +161,7 @@ export default function CreateCampaignPage() {
       const response = await fetch("/api/campaigns/create", {
         method: "POST",
         headers: {
-          'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
+          "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
         },
         body: formDataToSend,
       });
@@ -490,10 +488,14 @@ export default function CreateCampaignPage() {
                     <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6 flex flex-col items-center justify-center">
                       {previewImage ? (
                         <div className="relative w-full">
-                          <img
+                          {/* Use Next.js Image component */}
+                          <Image
                             src={previewImage}
                             alt="Campaign preview"
+                            width={480} // Adjust based on your design needs
+                            height={160} // Adjust based on your design needs (max-h-40 = 160px)
                             className="mx-auto max-h-40 object-contain rounded-lg"
+                            unoptimized // Required for local object URLs
                           />
                           <button
                             type="button"

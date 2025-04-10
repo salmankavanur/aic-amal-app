@@ -396,7 +396,7 @@ export default function DeleteStatusPage() {
 
           <div className="mb-6">
             <label htmlFor="confirmText" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Type <span className="font-bold italic">"{status.content.length > 30 ? `${status.content.substring(0, 30)}...` : status.content}"</span> to confirm deletion:
+              Type <span className="font-bold italic">&quot;{status.content.length > 30 ? `${status.content.substring(0, 30)}...` : status.content}&quot;</span> to confirm deletion:
             </label>
             <input
               type="text"

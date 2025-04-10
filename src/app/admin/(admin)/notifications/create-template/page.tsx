@@ -526,7 +526,7 @@ export default function CreateTemplatePage() {
                                     <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg text-xs text-gray-500 dark:text-gray-400">
                                         <p className="font-medium mb-1">Available Placeholders:</p>
                                         <ul className="grid grid-cols-2 gap-x-4 gap-y-1">
-                                            <li><code>{"{name}"}</code> - Recipient's name</li>
+                                            <li><code>{"{name}"}</code> - Recipient&apos;s name</li>
                                             <li><code>{"{amount}"}</code> - Donation amount</li>
                                             <li><code>{"{date}"}</code> - Current date</li>
                                             <li><code>{"{id}"}</code> - Donation/Transaction ID</li>

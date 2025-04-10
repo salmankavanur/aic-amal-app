@@ -10,12 +10,9 @@ import {
   Plus,
   RefreshCw,
   AlertCircle,
-  Check,
   X,
   Save,
   Loader2,
-  Eye,
-  EyeOff
 } from "lucide-react";
 import { useStatusStore } from "@/store/statusStore";
 import { StatusCategory } from "@/lib/types";
@@ -362,7 +359,7 @@ export default function CategoriesPage() {
             No Categories Available
           </h3>
           <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto mb-6">
-            You haven't created any categories yet. Categories help organize your statuses for easier discovery.
+            You haven&apos;t created any categories yet. Categories help organize your statuses for easier discovery.
           </p>
           <button 
             onClick={() => setShowAddForm(true)}
@@ -474,7 +471,7 @@ export default function CategoriesPage() {
                       Confirm Deletion
                     </h4>
                     <p className="text-sm text-red-700 dark:text-red-400 mb-3">
-                      Are you sure you want to delete the category <strong>"{category.name}"</strong>? This action cannot be undone.
+                      Are you sure you want to delete the category <strong>&quot;{category.name}&quot;</strong>? This action cannot be undone.
                     </p>
                     
                     {category.count && category.count > 0 && (

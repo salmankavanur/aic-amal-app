@@ -269,7 +269,7 @@ export default function EditStatusPage() {
         if (!e.target.files || e.target.files.length === 0) return;
 
         const file = e.target.files[0];
-        const fileType = file.type.split('/')[0]; // 'image' or 'video'
+        // const fileType = file.type.split('/')[0]; // 'image' or 'video'
 
         // Validate file type
         if (

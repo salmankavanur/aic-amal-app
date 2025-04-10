@@ -120,7 +120,7 @@ export default function EditVolunteerPage() {
         <div className="text-center">
           <Loader2 className="h-10 w-10 animate-spin text-blue-600 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900">Loading volunteer data...</h3>
-          <p className="mt-1 text-sm text-gray-500">Please wait while we fetch the volunteer's information.</p>
+          <p className="mt-1 text-sm text-gray-500">Please wait while we fetch the volunteer&lsquo;s information.</p>
         </div>
       </div>
     );

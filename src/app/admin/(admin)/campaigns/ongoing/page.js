@@ -1,10 +1,9 @@
-// src/app/(admin)/campaigns/ongoing/page.jsx
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image"; // Added import for Next.js Image
 import {
   Search,
-  Calendar,
   BarChart2,
   Edit,
   Trash2,
@@ -41,14 +40,14 @@ export default function OngoingCampaignsPage() {
     const fetchCampaigns = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("/api/campaigns/admin?status=active",{
-          method: 'GET',
+        const response = await fetch("/api/campaigns/admin?status=active", {
+          method: "GET",
           headers: {
-            'x-api-key': process.env.NEXT_PUBLIC_API_KEY,
+            "x-api-key": process.env.NEXT_PUBLIC_API_KEY,
           },
-        }); // Fetch only active campaigns
+        });
         const data = await response.json();
-        console.log("Fetched campaigns:", data); // Log to verify data
+        console.log("Fetched campaigns:", data);
         setCampaigns(data);
       } catch (error) {
         console.error("Error fetching campaigns:", error);
@@ -101,7 +100,7 @@ export default function OngoingCampaignsPage() {
         const response = await fetch(`/api/campaigns/delete/${id}`, {
           method: "DELETE",
           headers: {
-            'x-api-key': process.env.NEXT_PUBLIC_API_KEY,
+            "x-api-key": process.env.NEXT_PUBLIC_API_KEY,
           },
         });
         if (response.ok) {
@@ -117,25 +116,17 @@ export default function OngoingCampaignsPage() {
     }
   };
 
-  // Function to get the image URL with fallback - copied from upcoming campaigns page
+  // Function to get the image URL with fallback
   const getCampaignImageUrl = (campaign) => {
-    // First priority: Use featuredImageUrl from Supabase if available
     if (campaign.featuredImageUrl) {
       return campaign.featuredImageUrl;
     }
-    
-    // Second priority: If we still have legacy data with featuredImage as Buffer
     if (campaign.featuredImage && campaign.featuredImageType) {
-      // Check if it's already a string URL (might happen during transition)
-      if (typeof campaign.featuredImage === 'string') {
+      if (typeof campaign.featuredImage === "string") {
         return campaign.featuredImage;
       }
-      
-      // Otherwise, return placeholder
       return "/api/placeholder/800/400";
     }
-    
-    // Fallback to placeholder
     return "/api/placeholder/800/400";
   };
 
@@ -151,7 +142,7 @@ export default function OngoingCampaignsPage() {
             </span>
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Monitor and manage your organization's active fundraising campaigns
+            Monitor and manage your organization&apos;s active fundraising campaigns
           </p>
         </div>
         <Link
@@ -288,10 +279,11 @@ export default function OngoingCampaignsPage() {
                 className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl overflow-hidden hover:translate-y-[-5px] transition-all duration-300 flex flex-col"
               >
                 <div className="h-48 bg-gradient-to-br from-emerald-500/20 to-blue-500/20 relative">
-                  {/* Use the new getCampaignImageUrl function here */}
-                  <img
+                  <Image
                     src={getCampaignImageUrl(campaign)}
                     alt={campaign.name}
+                    width={800} // Matches placeholder dimensions
+                    height={400} // Matches placeholder dimensions and h-48 (192px scaled up)
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
@@ -339,8 +331,7 @@ export default function OngoingCampaignsPage() {
                       <div className="flex items-center justify-center text-xs text-gray-500 dark:text-gray-400 mb-1">
                         <Users className="h-3 w-3 mr-1" /> Donors
                       </div>
-                      <p className="font-semibold text-gray-800 dark:text-white">N/A</p>{" "}
-                      {/* Update if donor count is added */}
+                      <p className="font-semibold text-gray-800 dark:text-white">N/A</p>
                     </div>
                     <div className="bg-white/20 dark:bg-gray-800/20 rounded-lg p-3 text-center">
                       <div className="flex items-center justify-center text-xs text-gray-500 dark:text-gray-400 mb-1">
@@ -361,12 +352,16 @@ export default function OngoingCampaignsPage() {
                   </p>
                 </div>
                 <div className="p-4 pt-0 flex justify-between">
-                <Link
-                  href={campaign.type === "physical" ? `/admin/campaigns/track/physical?id=${campaign._id}` : `/admin/campaigns/track?id=${campaign._id}`}
-                  className="px-3 py-2 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 text-sm font-medium hover:bg-white/20 transition-all duration-300 flex items-center"
-                >
-                  <BarChart2 className="h-4 w-4 mr-2" /> Track Progress
-                </Link>
+                  <Link
+                    href={
+                      campaign.type === "physical"
+                        ? `/admin/campaigns/track/physical?id=${campaign._id}`
+                        : `/admin/campaigns/track?id=${campaign._id}`
+                    }
+                    className="px-3 py-2 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 text-sm font-medium hover:bg-white/20 transition-all duration-300 flex items-center"
+                  >
+                    <BarChart2 className="h-4 w-4 mr-2" /> Track Progress
+                  </Link>
                   <div className="flex space-x-2">
                     <Link
                       href={`/campaigns/detail?id=${campaign._id}`}
@@ -395,4 +390,4 @@ export default function OngoingCampaignsPage() {
       )}
     </div>
   );
-}  
+}

@@ -11,7 +11,7 @@ const PricingDetails: React.FC = () => {
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             We believe in making it easy for anyone to contribute to causes they care about. 
-            That's why we don't use fixed pricing or subscription plans.
+            That&apos;s why we don&apos;t use fixed pricing or subscription plans.
           </p>
         </div>
 

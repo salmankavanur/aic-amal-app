@@ -810,7 +810,7 @@ Thank you for your generous contribution!
               <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg mb-3 text-xs text-gray-500 dark:text-gray-400">
                 You can use the following placeholders in your message:
                 <div className="grid grid-cols-2 gap-2 mt-2">
-                  <div className="font-mono">{"{name}"}</div><div>Donor's name</div>
+                  <div className="font-mono">{"{name}"}</div><div>Donor&apos;s name</div>
                   <div className="font-mono">{"{amount}"}</div><div>Donation amount</div>
                   <div className="font-mono">{"{type}"}</div><div>Donation type</div>
                   <div className="font-mono">{"{id}"}</div><div>Donation ID</div>

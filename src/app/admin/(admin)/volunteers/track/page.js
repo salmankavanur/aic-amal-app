@@ -264,7 +264,7 @@ export default function BoxesPage() {
             </div>
             <h3 className="text-xl font-medium text-gray-800 mb-3">No Boxes Assigned Yet</h3>
             <p className="text-gray-500 mb-8 max-w-md mx-auto">
-              You don't have any donation boxes assigned to you at the moment. Please check back later or contact your administrator.
+              You don&apos;t have any donation boxes assigned to you at the moment. Please check back later or contact your administrator.
             </p>
             <Link
               href="/volunteer/dashboard"

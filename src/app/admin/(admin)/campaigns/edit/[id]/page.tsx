@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image"; // Added import for Next.js Image
 import {
   ArrowLeft,
   Calendar,
@@ -27,7 +28,7 @@ export default function EditCampaignPage({ params: paramsPromise }) {
     startDate: string;
     endDate: string;
     featuredImage: File | null;
-    featuredImageUrl: string | null; // Added for Supabase URL
+    featuredImageUrl: string | null;
     notes: string;
     status: "draft" | "active";
     currentAmount: number;
@@ -44,7 +45,7 @@ export default function EditCampaignPage({ params: paramsPromise }) {
     startDate: "",
     endDate: "",
     featuredImage: null,
-    featuredImageUrl: null, // Added for Supabase URL
+    featuredImageUrl: null,
     notes: "",
     status: "draft",
     currentAmount: 0,
@@ -75,21 +76,18 @@ export default function EditCampaignPage({ params: paramsPromise }) {
       }
 
       try {
-        const response = await fetch(`/api/campaigns/${id}`,{
-          method: 'GET',
+        const response = await fetch(`/api/campaigns/${id}`, {
+          method: "GET",
           headers: {
-            'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
+            "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
           },
         });
         if (!response.ok) throw new Error("Failed to fetch campaign");
 
         const data = await response.json();
 
-        // For Supabase integration, directly use the featuredImageUrl if available
         const imageUrl = data.featuredImageUrl || null;
 
-        // Support both old and new image storage methods during transition
-        // This enables backward compatibility with campaigns that still use Buffer storage
         let legacyImageUrl: string | null = null;
         if (!imageUrl && data.featuredImage && data.featuredImageType) {
           try {
@@ -110,14 +108,13 @@ export default function EditCampaignPage({ params: paramsPromise }) {
           startDate: data.startDate ? new Date(data.startDate).toISOString().split("T")[0] : "",
           endDate: data.endDate ? new Date(data.endDate).toISOString().split("T")[0] : "",
           featuredImage: null,
-          featuredImageUrl: imageUrl, // Store Supabase URL if available
+          featuredImageUrl: imageUrl,
           notes: data.notes || "",
           status: data.status || "draft",
           currentAmount: data.currentAmount || 0,
           isInfinite: data.isInfinite || false,
         });
 
-        // Set the preview image to either Supabase URL or legacy URL
         setPreviewImage(imageUrl || legacyImageUrl);
       } catch (err) {
         setFetchError(err instanceof Error ? err.message : "Unknown error occurred");
@@ -130,12 +127,11 @@ export default function EditCampaignPage({ params: paramsPromise }) {
     fetchCampaign();
 
     return () => {
-      // Only revoke object URLs for legacy images (not for Supabase URLs)
-      if (previewImage && !previewImage.includes('supabase.co')) {
+      if (previewImage && !previewImage.includes("supabase.co")) {
         URL.revokeObjectURL(previewImage);
       }
     };
-  }, [id]);
+  }, [id, previewImage]); // Added previewImage to dependency array
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -163,7 +159,7 @@ export default function EditCampaignPage({ params: paramsPromise }) {
       setFormData((prev) => ({
         ...prev,
         featuredImage: file,
-        featuredImageUrl: null, // Clear the Supabase URL since we're uploading a new image
+        featuredImageUrl: null,
       }));
       clearError("featuredImage");
     }
@@ -224,19 +220,13 @@ export default function EditCampaignPage({ params: paramsPromise }) {
 
     try {
       const formDataToSend = new FormData();
-      
-      // Add all fields to FormData
+
       Object.entries(formData).forEach(([key, value]) => {
-        // Add the new featuredImage if it exists
-        if (key === 'featuredImage' && value) {
+        if (key === "featuredImage" && value) {
           formDataToSend.append(key, value);
-        }
-        // Add the current featuredImageUrl to track existing image
-        else if (key === 'featuredImageUrl' && value) {
-          formDataToSend.append('currentImageUrl', value);
-        }
-        // Add all other non-null fields
-        else if (value !== null && value !== undefined) {
+        } else if (key === "featuredImageUrl" && value) {
+          formDataToSend.append("currentImageUrl", value);
+        } else if (value !== null && value !== undefined) {
           formDataToSend.append(key, value.toString());
         }
       });
@@ -244,7 +234,7 @@ export default function EditCampaignPage({ params: paramsPromise }) {
       const response = await fetch(`/api/campaigns/${id}`, {
         method: "PUT",
         headers: {
-          'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
+          "x-api-key": "9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d",
         },
         body: formDataToSend,
       });
@@ -566,24 +556,25 @@ export default function EditCampaignPage({ params: paramsPromise }) {
                     <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6 flex flex-col items-center justify-center">
                       {previewImage ? (
                         <div className="relative w-full">
-                          <img
+                          <Image
                             src={previewImage}
                             alt="Campaign preview"
+                            width={480} // Adjust based on your design
+                            height={160} // Matches max-h-40 (160px)
                             className="mx-auto max-h-40 object-contain rounded-lg"
+                            unoptimized={!previewImage.includes("supabase.co")} // Optimize only for Supabase URLs
                           />
                           <button
                             type="button"
                             onClick={() => {
-                              // Clean up object URL if needed
-                              if (previewImage && !previewImage.includes('supabase.co')) {
+                              if (previewImage && !previewImage.includes("supabase.co")) {
                                 URL.revokeObjectURL(previewImage);
                               }
-                              
                               setPreviewImage(null);
-                              setFormData((prev) => ({ 
-                                ...prev, 
-                                featuredImage: null, 
-                                featuredImageUrl: null 
+                              setFormData((prev) => ({
+                                ...prev,
+                                featuredImage: null,
+                                featuredImageUrl: null,
                               }));
                             }}
                             className="absolute top-2 right-2 bg-white dark:bg-gray-800 rounded-full p-1 shadow-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"

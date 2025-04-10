@@ -579,7 +579,7 @@ export default function StatusAdminPage() {
                                             const timestamp = new Date(activity.timestamp);
                                             const now = new Date();
                                             const diffHours = Math.floor((now.getTime() - timestamp.getTime()) / (1000 * 60 * 60));
-                                            let timeAgo = diffHours < 1 ? "Just now" : diffHours < 24 ? `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago` : diffHours < 48 ? "Yesterday" : timestamp.toLocaleDateString();
+                                            const timeAgo = diffHours < 1 ? "Just now" : diffHours < 24 ? `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago` : diffHours < 48 ? "Yesterday" : timestamp.toLocaleDateString();
 
                                             return (
                                                 <div key={activity.id} className="flex items-start">

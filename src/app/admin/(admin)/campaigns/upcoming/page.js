@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image"; // Added import for Next.js Image
 import {
   Search,
-  Calendar,
   BarChart2,
   Edit,
   Trash2,
@@ -11,7 +11,6 @@ import {
   Filter,
   ChevronDown,
   Eye,
-  Clock,
   Users,
   Heart,
   AlertCircle,
@@ -40,10 +39,10 @@ export default function UpcomingCampaignsPage() {
     const fetchCampaigns = async () => {
       try {
         console.log("Fetching campaigns from /api/campaigns/upcoming...");
-        const response = await fetch("/api/campaigns/all",{
-          method: 'GET',
+        const response = await fetch("/api/campaigns/all", {
+          method: "GET",
           headers: {
-            'x-api-key': process.env.NEXT_PUBLIC_API_KEY,
+            "x-api-key": process.env.NEXT_PUBLIC_API_KEY,
           },
         });
         console.log("Response status:", response.status, response.statusText);
@@ -120,7 +119,7 @@ export default function UpcomingCampaignsPage() {
         const response = await fetch(`/api/campaigns/delete/${id}`, {
           method: "DELETE",
           headers: {
-            'x-api-key': process.env.NEXT_PUBLIC_API_KEY,
+            "x-api-key": process.env.NEXT_PUBLIC_API_KEY,
           },
         });
         if (response.ok) {
@@ -138,23 +137,15 @@ export default function UpcomingCampaignsPage() {
 
   // Function to get the image URL with fallback
   const getCampaignImageUrl = (campaign) => {
-    // First priority: Use featuredImageUrl from Supabase if available
     if (campaign.featuredImageUrl) {
       return campaign.featuredImageUrl;
     }
-    
-    // Second priority: If we still have legacy data with featuredImage as Buffer
     if (campaign.featuredImage && campaign.featuredImageType) {
-      // Check if it's already a string URL (might happen during transition)
-      if (typeof campaign.featuredImage === 'string') {
+      if (typeof campaign.featuredImage === "string") {
         return campaign.featuredImage;
       }
-      
-      // Otherwise, return placeholder
       return "/api/placeholder/800/400";
     }
-    
-    // Fallback to placeholder
     return "/api/placeholder/800/400";
   };
 
@@ -298,10 +289,11 @@ export default function UpcomingCampaignsPage() {
               className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl overflow-hidden hover:translate-y-[-5px] transition-all duration-300 flex flex-col"
             >
               <div className="h-48 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 relative">
-                {/* Use the function to get the best available image URL */}
-                <img
+                <Image
                   src={getCampaignImageUrl(campaign)}
                   alt={campaign.name}
+                  width={800} // Matches placeholder dimensions
+                  height={400} // Matches placeholder dimensions and h-48 (192px scaled up)
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
@@ -373,9 +365,13 @@ export default function UpcomingCampaignsPage() {
                 >
                   <Edit className="h-4 w-4 mr-2" /> Edit Details
                 </Link>
-         
+
                 <Link
-                  href={campaign.type === "physical" ? `/admin/campaigns/track/physical?id=${campaign._id}` : `/admin/campaigns/track?id=${campaign._id}`}
+                  href={
+                    campaign.type === "physical"
+                      ? `/admin/campaigns/track/physical?id=${campaign._id}`
+                      : `/admin/campaigns/track?id=${campaign._id}`
+                  }
                   className="px-3 py-2 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 text-sm font-medium hover:bg-white/20 transition-all duration-300 flex items-center"
                 >
                   <BarChart2 className="h-4 w-4 mr-2" /> Track Progress

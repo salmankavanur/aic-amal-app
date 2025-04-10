@@ -22,19 +22,14 @@ import {
     Star,
     Eye,
     EyeOff,
-    Globe,
     SlidersHorizontal,
     Palette,
-    Type,
     Hash,
     Users,
     Clock,
     HelpCircle,
     Sparkles,
     Zap,
-    Award,
-    BookOpen,
-    BellRing
 } from "lucide-react";
 import { useStatusStore } from "@/store/statusStore";
 
@@ -44,6 +39,18 @@ interface FormErrors {
     mediaFile?: string;
     category?: string;
     submit?: string;
+}
+
+// Define template interface
+interface Template  {
+    type: "text" | "image" | "video";
+    content: string;
+    backgroundColor: string;
+    textColor: string;
+    fontFamily: string;
+    fontSize: number;
+    category: string;
+    tags: string[];
 }
 
 export default function CreateStatusPage() {
@@ -65,7 +72,7 @@ export default function CreateStatusPage() {
     const [featured, setFeatured] = useState(false);
     const [isActive, setIsActive] = useState(true);
     const [scheduleTime, setScheduleTime] = useState<string>("");
-    const [isScheduled, setIsScheduled] = useState(false);
+    const [isScheduled, setIsScheduled] = useState(false); // eslint-disable-line @typescript-eslint/no-unused-vars
 
     // UI state
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -182,7 +189,6 @@ export default function CreateStatusPage() {
         if (!e.target.files || e.target.files.length === 0) return;
 
         const file = e.target.files[0];
-        const fileType = file.type.split('/')[0]; // 'image' or 'video'
 
         // Validate file type
         if (
@@ -231,7 +237,7 @@ export default function CreateStatusPage() {
         setTags(tags.filter(tag => tag !== tagToRemove));
     };
 
-    const applyTemplate = (template: { type: any; content: any; backgroundColor: any; textColor: any; fontFamily: any; fontSize: any; category: any; tags: any; }) => {
+    const applyTemplate = (template: Template) => {
         setType(template.type);
         setContent(template.content);
         setBackgroundColor(template.backgroundColor);

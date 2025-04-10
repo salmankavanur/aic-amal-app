@@ -8,18 +8,14 @@ import {
   FileText,
   Mail,
   Search,
-  Trash2,
   AlertCircle,
   CheckCircle,
   Image as ImageIcon,
-  FileSpreadsheet,
-  Filter,
   X,
   Loader2,
   Check,
   Info,
   MessageSquare,
-  List,
   RefreshCw
 } from "lucide-react";
 
@@ -83,7 +79,7 @@ export default function GenerateReceiptsPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalItems, setTotalItems] = useState<number>(0);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [itemsPerPage] = useState<number>(10);
   const [selectAllPages, setSelectAllPages] = useState<boolean>(false);
   const [isFetchingAllDonations, setIsFetchingAllDonations] = useState<boolean>(false);
 
@@ -1487,7 +1483,7 @@ AIC Amal Charitable Trust Team`;
                     <p className="mt-2">Note: Only donors with valid phone numbers will receive the messages.</p>
                     <p className="mt-2">You can use the following placeholders in your message:</p>
                     <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-1">
-                      <div className="font-mono text-xs">{'{name}'}</div><div className="text-xs">Donor's name</div>
+                      <div className="font-mono text-xs">{'{name}'}</div><div className="text-xs">Donor&apos;s name</div>
                       <div className="font-mono text-xs">{'{amount}'}</div><div className="text-xs">Donation amount</div>
                       <div className="font-mono text-xs">{'{id}'}</div><div className="text-xs">Donation ID</div>
                       <div className="font-mono text-xs">{'{date}'}</div><div className="text-xs">Donation date</div>
