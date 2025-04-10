@@ -1,13 +1,14 @@
+// src/app/api/donations/create/route.js
 import connectToDatabase from "../../../../lib/db";
 import Donation from "../../../../models/Donation";
 import { NextResponse } from "next/server";
-// import Razorpay from "razorpay";
-import crypto from "crypto";
+import Razorpay from "razorpay";
 
-// const razorpay = new Razorpay({
-//   key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, // Note: Should use NEXT_PUBLIC_ prefix for client-side, but keep server-side secret safe
-//   key_secret: process.env.RAZORPAY_KEY_SECRET,
-// });
+// Initialize Razorpay
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 
 export async function POST(req) {
   try {
@@ -18,7 +19,7 @@ export async function POST(req) {
 
     const {
       amount,
-      type,// Default to "guest" if not provided
+      type ,
       name,
       phone,
       district,
@@ -30,49 +31,61 @@ export async function POST(req) {
       razorpayPaymentId,
       razorpayOrderId,
       razorpaySignature,
+      
     } = body;
 
     // Validate required fields
-    if (!amount || !type || !razorpayPaymentId || !razorpayOrderId || !razorpaySignature) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!amount || !type || !razorpayPaymentId) {
+      return NextResponse.json(
+        { error: "Missing required fields (amount, type, razorpayPaymentId)" },
+        { status: 400 }
+      );
     }
 
-    // Verify Razorpay payment signature
-    const generatedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-      .digest("hex");
+    // ✅ Fetch payment details from Razorpay API
+    const payment = await razorpay.payments.fetch(razorpayPaymentId);
 
-    if (generatedSignature !== razorpaySignature) {
-      console.log("Signature mismatch:", { generatedSignature, razorpaySignature });
-      return NextResponse.json({ error: "Payment verification failed" }, { status: 400 });
+    console.log("Razorpay Payment Details:", payment);
+
+    // Check if payment is valid and captured
+    if (payment.status !== "captured") {
+      return NextResponse.json(
+        { error: "Payment not captured or failed", paymentStatus: payment.status },
+        { status: 400 }
+      );
     }
 
-    // Create donation record
+    // ✅ Check if amount matches
+    const paidAmount = payment.amount / 100; // Razorpay stores amount in paise
+    if (paidAmount !== parseFloat(amount)) {
+      return NextResponse.json(
+        { error: "Amount mismatch", expected: amount, received: paidAmount },
+        { status: 400 }
+      );
+    }
+
+    // ✅ Save donation to database
     const donation = new Donation({
-      amount: parseFloat(amount), // Ensure amount is a number
+      amount: parseFloat(amount),
       type,
-      email,
-      boxId: boxId || null,
       name: name || null,
-      phone: phone?.startsWith('+') ? phone : "+91" + phone || null,
+      phone: phone?.startsWith("+") ? phone : phone ? "+91" + phone : null,
+      email: email || null,
       district: district || null,
       panchayat: panchayat || null,
+      boxId: boxId || null,
       campaignId: campaignId || null,
       instituteId: instituteId || null,
       razorpayPaymentId,
-      razorpayOrderId,
+      razorpayOrderId ,
       razorpaySignature,
       status: "Completed",
     });
-    console.log(donation);
-    
 
     await donation.save();
-    console.log("Donation saved:", donation._id);
 
     return NextResponse.json(
-      { message: "Donation created", id: donation._id },
+      { message: "Donation created successfully", id: donation._id },
       { status: 201 }
     );
   } catch (error) {
