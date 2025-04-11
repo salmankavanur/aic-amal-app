@@ -6,7 +6,7 @@ export const whatsappService = {
     /**
  * Send a custom WhatsApp message to a donor using Twilio
  */
-    async sendCustomMessage({ phone, name, message }) {
+    async sendCustomMessage({ phone, message }) {
         try {
             // Format the phone number for WhatsApp
             const formattedPhone = formatPhoneNumber(phone);

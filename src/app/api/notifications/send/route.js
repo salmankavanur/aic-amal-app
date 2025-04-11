@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectToDatabase from "../../../../lib/db";
-import NotificationTemplate from "../../../../models/notificationTemplate";
+// import NotificationTemplate from "../../../../models/notificationTemplate";
 import NotificationHistory from "../../../../models/notificationHistory";
 import { Expo } from "expo-server-sdk";
 import twilio from 'twilio';
@@ -12,7 +12,7 @@ import nodemailer from 'nodemailer';
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_WHATSAPP_NUMBER = process.env.TWILIO_WHATSAPP_NUMBER;
-const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
+// const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
 const EMAIL_HOST = process.env.EMAIL_HOST;
 const EMAIL_PORT = process.env.EMAIL_PORT;
 const EMAIL_USER = process.env.EMAIL_USER;

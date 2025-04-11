@@ -8,7 +8,7 @@ interface AdminHeaderProps {
   onAddNew: () => void;
 }
 
-const AdminHeader: React.FC<AdminHeaderProps> = ({ title, description, onAddNew }) => {
+const AdminHeader: React.FC<AdminHeaderProps> = ({ title, description }) => {
   return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>

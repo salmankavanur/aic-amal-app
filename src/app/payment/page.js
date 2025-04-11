@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import axios from "axios";
 
 export default function PaymentPage() {
-  const router = useRouter();
+  // const router = useRouter();
   const searchParams = useSearchParams();
 
   const subscriptionId = searchParams.get("subscriptionId");

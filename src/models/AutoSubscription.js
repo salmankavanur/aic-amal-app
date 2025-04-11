@@ -16,6 +16,7 @@ const AutoSubscriptionSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now },
     isActive: { type: Boolean, default: true },
     method: { type: String, required:true, default:"auto" },
+    createdAt: { type: Date, default: Date.now },
 },{collection:"subscriptions"});
 
 export default mongoose.models.AutoSubscription || mongoose.model("AutoSubscription", AutoSubscriptionSchema);  

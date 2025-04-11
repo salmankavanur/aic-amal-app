@@ -2,11 +2,11 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import axios  from "axios";
 
 export default function PaymentPage() {
-  const router = useRouter();
+  // const router = useRouter();
   const searchParams = useSearchParams();
   
   const subscriptionId = searchParams.get("subscriptionId");
@@ -39,7 +39,7 @@ export default function PaymentPage() {
         name: "Amal AIC",
         description: `Initial payment for subscription ${subscriptionId}`,
         subscription_id: subscriptionId,
-        handler: async function (response) {
+        handler: async function () {
           // Payment success callback
           try {
             const response = await axios.post("/api/update-subscription-status", {

@@ -135,7 +135,7 @@ const SponsorshipForm: React.FC<SponsorshipFormProps> = ({
     
     try {
       // Remove locationType from submission as it's not part of the original data model
-      const { locationType, ...submissionData } = formData;
+      const { ...submissionData } = formData;
       await onSubmit(submissionData);
     } catch (error) {
       console.error("Error submitting form:", error);

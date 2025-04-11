@@ -69,9 +69,9 @@ export interface StatusTag {
 
 export interface StatusStats {
     dailyUsage: number | undefined;
-    recentActivity: any;
-    weeklyEngagement: any;
-    typeDistribution: any;
+    recentActivity: Record<string, unknown>;
+    weeklyEngagement: Record<string, unknown>;
+    typeDistribution: Record<string, unknown>;
     totalStatuses: number;
     activeStatuses: number;
     totalUsage: number;

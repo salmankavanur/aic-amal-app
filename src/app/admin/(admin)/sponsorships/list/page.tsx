@@ -16,6 +16,7 @@ import StatsCards from "@/components/admin-section/sponsorship/StatsCards";
 
 // Define the Sponsorship interface
 export interface Sponsorship {
+  program: any;
   _id: string;
   name: string;
   email?: string;

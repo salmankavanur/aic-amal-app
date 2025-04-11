@@ -1,6 +1,6 @@
 // app/api/volunteers/route.js
 import { NextResponse } from "next/server";
-import mongoose from "mongoose";
+// import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db"; // Adjust path to your database connection utility
 import Volunteer from "@/models/Volunteer"; // Adjust path to your Volunteer model
 

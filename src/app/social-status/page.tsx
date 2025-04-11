@@ -43,7 +43,7 @@ export default function SocialStatusPage() {
     const carouselRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null); // Add ref for video element
 
-    const allTags = [...new Set(statuses.flatMap(status => status.tags || []))];
+    // const allTags = [...new Set(statuses.flatMap(status => status.tags || []))];
 
     useEffect(() => {
         fetchStatuses(true);
@@ -158,7 +158,7 @@ export default function SocialStatusPage() {
 
     const shareStatus = async (status: Status) => {
         try {
-            let shareData: { title: string; text: string; url?: string; } = {
+            const shareData: { title: string; text: string; url?: string; } = {
                 title: 'Check out this status!',
                 text: status.content,
             };

@@ -176,7 +176,7 @@ async logMessageSent(id, messageData) {
   /**
    * Update donation status
    */
-  async updateDonationStatus(id, { status, statusNote }) {
+  async updateDonationStatus(id, { status }) {
     await connectToDatabase();
     
     const donation = await Donation.findById(id);

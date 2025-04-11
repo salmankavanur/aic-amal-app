@@ -240,8 +240,8 @@ const ReceiptList: React.FC<ReceiptListProps> = ({ phoneNumber, onLogout }) => {
 
   const filteredReceipts = getFilteredReceipts();
   const donationTypes = ["General", ...new Set(receipts.map((receipt) => receipt.type || "General"))];
-  const completedCount = receipts.filter((r) => r.status === "Completed").length;
-  const pendingCount = totalDonations - completedCount;
+  // const completedCount = receipts.filter((r) => r.status === "Completed").length;
+  // const pendingCount = totalDonations - completedCount;
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -249,7 +249,7 @@ const ReceiptList: React.FC<ReceiptListProps> = ({ phoneNumber, onLogout }) => {
     }
   };
 
-  function fetchWithRetry(_currentPage: number): void {
+  function fetchWithRetry(): void {
     throw new Error("Function not implemented.");
   }
 
