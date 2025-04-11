@@ -18,9 +18,13 @@ import {
   ChevronLeft,
   Eye,
   Share,
-  Link as LinkIcon
+  Link as LinkIcon,
+  ZoomIn,
+  ZoomOut,
+  Maximize2
 } from "lucide-react";
-import NextImage from "next/image";
+import { useRouter } from "next/navigation";
+import NextImage from "next/image"; // Import Next.js Image as NextImage
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
@@ -54,7 +58,16 @@ interface Frame {
   usageCount?: number;
 }
 
+interface ImagePosition {
+  x: number;
+  y: number;
+  scale: number;
+  width: number;
+  height: number;
+}
+
 const UserPhotoFraming: React.FC = () => {
+  // const router = useRouter();
   const [frames, setFrames] = useState<Frame[]>([]);
   const [selectedFrame, setSelectedFrame] = useState<Frame | null>(null);
   const [userImage, setUserImage] = useState<string | null>(null);
@@ -64,13 +77,26 @@ const UserPhotoFraming: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<"select" | "upload" | "crop" | "preview" | "complete">("select");
+  const [copySuccess, setCopySuccess] = useState<boolean>(false);
   const [hoveredFrame, setHoveredFrame] = useState<string | null>(null);
   const [favoriteFrames, setFavoriteFrames] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [frameCopySuccess, setFrameCopySuccess] = useState<{[key: string]: boolean}>({});
+  const [shareUrl, setShareUrl] = useState<string>("");
+  const [frameCopySuccess, setFrameCopySuccess] = useState<{ [key: string]: boolean }>({});
+  const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const userImgRef = useRef<HTMLImageElement>(null);
+  const imageUrlRef = useRef<HTMLInputElement>(null);
+
+  const [imagePosition, setImagePosition] = useState<ImagePosition>({
+    x: 0,
+    y: 0,
+    scale: 1,
+    width: 0,
+    height: 0
+  });
 
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
@@ -78,14 +104,32 @@ const UserPhotoFraming: React.FC = () => {
   const [aspect, setAspect] = useState<number | undefined>(undefined);
 
   useEffect(() => {
+    // Check if the user is on a mobile device
+    const checkMobile = () => {
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+        (window.innerWidth <= 768);
+      setIsMobileDevice(isMobile);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
+
+  useEffect(() => {
     const fetchFrames = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("/api/frames?activeOnly=true",{
-          headers: {
-            'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
-          },
-        });
+        const response = await fetch("/api/frames?activeOnly=true",
+          {
+            headers: {
+              'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
+            }
+          }
+        );
         const data = await response.json();
 
         if (data.success) {
@@ -93,18 +137,26 @@ const UserPhotoFraming: React.FC = () => {
           if (selectedFrame && !data.data.some((f: { _id: string; }) => f._id === selectedFrame._id)) {
             setSelectedFrame(null);
           }
-          
+
           const urlParams = new URLSearchParams(window.location.search);
           const frameId = urlParams.get('frame');
-          
+
           if (frameId) {
             const frameFromUrl = data.data.find((f: { _id: string; }) => f._id === frameId);
             if (frameFromUrl) {
               setSelectedFrame(frameFromUrl);
               setCurrentStep("upload");
-              
+
               const aspectRatio = frameFromUrl.placementCoords.width / frameFromUrl.placementCoords.height;
               setAspect(aspectRatio);
+
+              setImagePosition({
+                x: frameFromUrl.placementCoords.x,
+                y: frameFromUrl.placementCoords.y,
+                width: frameFromUrl.placementCoords.width,
+                height: frameFromUrl.placementCoords.height,
+                scale: 1
+              });
             }
           }
         } else {
@@ -119,12 +171,12 @@ const UserPhotoFraming: React.FC = () => {
     };
 
     fetchFrames();
-    
+
     const savedFavorites = localStorage.getItem('favoriteFrames');
     if (savedFavorites) {
       setFavoriteFrames(JSON.parse(savedFavorites));
     }
-  }, [selectedFrame]);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('favoriteFrames', JSON.stringify(favoriteFrames));
@@ -145,9 +197,19 @@ const UserPhotoFraming: React.FC = () => {
     setSelectedFrame(frame);
     setCurrentStep("upload");
 
+    // Calculate the correct aspect ratio from the frame's placement coordinates
     const aspectRatio = frame.placementCoords.width / frame.placementCoords.height;
     setAspect(aspectRatio);
-    
+
+    // Store the image position for reference
+    setImagePosition({
+      x: frame.placementCoords.x,
+      y: frame.placementCoords.y,
+      width: frame.placementCoords.width,
+      height: frame.placementCoords.height,
+      scale: 1
+    });
+
     const url = new URL(window.location.href);
     url.searchParams.set('frame', frame._id);
     window.history.pushState({}, '', url);
@@ -155,14 +217,14 @@ const UserPhotoFraming: React.FC = () => {
 
   const handleCopyFrameLink = (frameId: string, event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    
+
     const shareLink = `${window.location.origin}${window.location.pathname}?frame=${frameId}`;
-    
+
     navigator.clipboard.writeText(shareLink).then(
       () => {
-        setFrameCopySuccess({...frameCopySuccess, [frameId]: true});
+        setFrameCopySuccess({ ...frameCopySuccess, [frameId]: true });
         setTimeout(() => {
-          setFrameCopySuccess({...frameCopySuccess, [frameId]: false});
+          setFrameCopySuccess({ ...frameCopySuccess, [frameId]: false });
         }, 2000);
       },
       (err) => {
@@ -195,15 +257,17 @@ const UserPhotoFraming: React.FC = () => {
   };
 
   const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    if (!aspect) return;
+    if (!aspect || !selectedFrame) return;
 
     const { width, height } = e.currentTarget;
 
+    // For mobile devices, ensure we're creating an appropriate initial crop
+    // that matches the frame aspect ratio and is properly centered
     const crop = centerCrop(
       makeAspectCrop(
         {
           unit: '%',
-          width: 90,
+          width: 90, // Use percentage to be device-independent
         },
         aspect,
         width,
@@ -216,8 +280,33 @@ const UserPhotoFraming: React.FC = () => {
     setCrop(crop);
   };
 
+  const handleAutoFit = () => {
+    if (!userImgRef.current || !selectedFrame || !aspect) return;
+
+    const image = userImgRef.current;
+    const { width, height } = image;
+
+    // Create an optimal crop that fits the entire image while maintaining the frame's aspect ratio
+    const optimalCrop = centerCrop(
+      makeAspectCrop(
+        {
+          unit: '%',
+          width: 100,
+        },
+        aspect,
+        width,
+        height
+      ),
+      width,
+      height
+    );
+
+    setCrop(optimalCrop);
+    setCompletedCrop(optimalCrop as unknown as PixelCrop);
+  };
+
   const createCroppedImage = () => {
-    if (!userImgRef.current || !completedCrop) return;
+    if (!userImgRef.current || !completedCrop || !selectedFrame) return;
 
     const image = userImgRef.current;
     const canvas = document.createElement('canvas');
@@ -225,25 +314,38 @@ const UserPhotoFraming: React.FC = () => {
 
     if (!ctx) return;
 
+    // Calculate the scaling factors between the displayed image and its natural size
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
 
-    canvas.width = completedCrop.width;
-    canvas.height = completedCrop.height;
+    // Set the canvas to the exact dimensions needed for the frame placement
+    // This ensures the image will fit perfectly in the frame regardless of device
+    const targetWidth = selectedFrame.placementCoords.width;
+    const targetHeight = selectedFrame.placementCoords.height;
 
+    // Create canvas at the exact dimensions needed for the frame
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    // Calculate the crop dimensions in the original image
+    const cropX = completedCrop.x * scaleX;
+    const cropY = completedCrop.y * scaleY;
+    const cropWidth = completedCrop.width * scaleX;
+    const cropHeight = completedCrop.height * scaleY;
+
+    // Enhanced image quality settings
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Draw the image to fit the placement coordinates exactly
     ctx.drawImage(
       image,
-      completedCrop.x * scaleX,
-      completedCrop.y * scaleY,
-      completedCrop.width * scaleX,
-      completedCrop.height * scaleY,
-      0,
-      0,
-      completedCrop.width,
-      completedCrop.height
+      cropX, cropY, cropWidth, cropHeight,
+      0, 0, targetWidth, targetHeight
     );
 
-    const croppedImageUrl = canvas.toDataURL('image/jpeg', 0.95);
+    // Use PNG for better quality
+    const croppedImageUrl = canvas.toDataURL('image/png', 1.0);
     setCroppedImage(croppedImageUrl);
 
     return croppedImageUrl;
@@ -272,15 +374,30 @@ const UserPhotoFraming: React.FC = () => {
 
     setIsLoading(true);
 
-    canvas.width = selectedFrame.dimensions.width;
-    canvas.height = selectedFrame.dimensions.height;
+    // Get device pixel ratio for high-DPI displays
+    const pixelRatio = window.devicePixelRatio || 1;
+
+    // Set canvas dimensions based on the frame dimensions
+    canvas.width = selectedFrame.dimensions.width * pixelRatio;
+    canvas.height = selectedFrame.dimensions.height * pixelRatio;
+
+    // Set the canvas CSS dimensions for proper display
+    canvas.style.width = `${selectedFrame.dimensions.width}px`;
+    canvas.style.height = `${selectedFrame.dimensions.height}px`;
+
+    // Scale the context to account for the pixel ratio
+    ctx.scale(pixelRatio, pixelRatio);
+
+    // Enable high-quality image rendering
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     const frameImg = new Image();
     const userImg = new Image();
-    
+
     frameImg.crossOrigin = "anonymous";
     userImg.crossOrigin = "anonymous";
-    
+
     frameImg.src = selectedFrame.imageUrl;
     userImg.src = croppedImage;
 
@@ -291,10 +408,10 @@ const UserPhotoFraming: React.FC = () => {
           loadedCount++;
           if (loadedCount === 2) resolve();
         };
-        
+
         frameImg.onload = onLoad;
         userImg.onload = onLoad;
-        
+
         frameImg.onerror = () => reject(new Error("Failed to load frame image"));
         userImg.onerror = () => reject(new Error("Failed to load user image"));
       });
@@ -302,34 +419,40 @@ const UserPhotoFraming: React.FC = () => {
 
     loadImages()
       .then(() => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
+        // Clear the entire canvas
+        ctx.clearRect(0, 0, canvas.width / pixelRatio, canvas.height / pixelRatio);
+
         const placement = selectedFrame.placementCoords;
-        
+
+        // Draw the user image at exact placement coordinates
         ctx.drawImage(
           userImg,
-          placement.x,
-          placement.y,
-          placement.width,
-          placement.height
+          0, 0, userImg.width, userImg.height,  // Source rectangle - use the entire cropped image
+          placement.x, placement.y, placement.width, placement.height  // Destination rectangle - exact frame placement
         );
-        
-        ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
-        
+
+        // Draw the frame overlay
+        ctx.drawImage(
+          frameImg,
+          0, 0,
+          canvas.width / pixelRatio,
+          canvas.height / pixelRatio
+        );
+
         if (userName) {
           const textSettings = selectedFrame.textSettings;
-          
+
           ctx.font = `${textSettings.size}px ${textSettings.font || 'Arial'}`;
           ctx.fillStyle = textSettings.color || '#000000';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          
+
           const textX = textSettings.x + (textSettings.width / 2);
           const textY = textSettings.y + (textSettings.height / 2);
-          
+
           ctx.fillText(userName, textX, textY);
         }
-        
+
         setIsLoading(false);
       })
       .catch((error) => {
@@ -341,24 +464,23 @@ const UserPhotoFraming: React.FC = () => {
 
   const trackFrameUsage = async (frameId: string): Promise<boolean> => {
     if (!frameId) return false;
-    
+
     try {
       const response = await fetch(`/api/frames/${frameId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': '9a4f2c8d7e1b5f3a9c2d8e7f1b4a5c3d',
         },
         body: JSON.stringify({ incrementUsage: true }),
       });
-      
+
       const data = await response.json();
-      
+
       if (!data.success) {
         console.warn("Failed to track frame usage:", data.message);
         return false;
       }
-      
+
       console.log('Frame usage tracked successfully:', data.data.usageCount);
       return true;
     } catch (error) {
@@ -372,6 +494,7 @@ const UserPhotoFraming: React.FC = () => {
 
     setIsProcessing(true);
     try {
+      // Use PNG format with maximum quality
       const dataUrl = canvasRef.current.toDataURL("image/png", 1.0);
       setFinalImage(dataUrl);
 
@@ -379,6 +502,9 @@ const UserPhotoFraming: React.FC = () => {
       if (!usageTracked) {
         console.warn('Usage tracking failed but image generated successfully');
       }
+
+      const shareableUrl = window.location.origin + '/share?frame=' + selectedFrame._id;
+      setShareUrl(shareableUrl);
 
       setCurrentStep("complete");
     } catch (err) {
@@ -396,12 +522,23 @@ const UserPhotoFraming: React.FC = () => {
     setFinalImage(null);
     setSelectedFrame(null);
     setCurrentStep("select");
+    setImagePosition({ x: 0, y: 0, scale: 1, width: 0, height: 0 });
     setCrop(undefined);
     setCompletedCrop(null);
-    
+    setCopySuccess(false);
+
     const url = new URL(window.location.href);
     url.searchParams.delete('frame');
     window.history.pushState({}, '', url);
+  };
+
+  const handleCopyShareLink = () => {
+    if (imageUrlRef.current) {
+      imageUrlRef.current.select();
+      document.execCommand('copy');
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    }
   };
 
   const handleShare = async () => {
@@ -456,7 +593,7 @@ const UserPhotoFraming: React.FC = () => {
     }
   };
 
-  const filteredFrames = frames.filter(frame => 
+  const filteredFrames = frames.filter(frame =>
     frame.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -501,7 +638,7 @@ const UserPhotoFraming: React.FC = () => {
           </div>
           <h3 className="text-xl font-medium text-gray-900 mb-2">No Active Frames</h3>
           <p className="text-gray-600">
-            There are currently no active photo frames available. 
+            There are currently no active photo frames available.
             Please check back later or contact the administrator.
           </p>
         </div>
@@ -515,48 +652,47 @@ const UserPhotoFraming: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="text-xl font-medium text-gray-800">Photo Framing</div>
-            
+
             <div className="flex-1 max-w-xl mx-auto">
               <div className="flex items-center justify-between px-2 sm:px-10">
                 {['select', 'upload', 'crop', 'preview', 'complete'].map((step, index) => (
                   <div key={step} className="flex flex-col items-center">
-                    <div 
-                      className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mb-1 ${
-                        currentStep === step
+                    <div
+                      className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mb-1 ${currentStep === step
                           ? "bg-blue-500 text-white"
                           : (['select', 'upload', 'crop', 'preview', 'complete'].indexOf(currentStep as string) >= index
-                              ? "bg-blue-500 text-white"
-                              : "bg-gray-200 text-gray-500")
-                      }`}
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-200 text-gray-500")
+                        }`}
                     >
                       <span className="text-xs sm:text-sm">{index + 1}</span>
                     </div>
                     <span className="text-xs text-gray-500 hidden sm:block">
                       {step === 'select' ? 'Select' :
-                       step === 'upload' ? 'Upload' :
-                       step === 'crop' ? 'Crop' :
-                       step === 'preview' ? 'Preview' :
-                       'Share'}
+                        step === 'upload' ? 'Upload' :
+                          step === 'crop' ? 'Crop' :
+                            step === 'preview' ? 'Preview' :
+                              'Share'}
                     </span>
                   </div>
                 ))}
               </div>
-              
+
               <div className="hidden sm:block absolute left-0 right-0 mx-auto w-2/3 h-0.5 bg-gray-200 -z-10 mt-4">
-                <div 
-                  className="h-full bg-blue-500 transition-all" 
-                  style={{ 
-                    width: 
+                <div
+                  className="h-full bg-blue-500 transition-all"
+                  style={{
+                    width:
                       currentStep === 'select' ? '0%' :
-                      currentStep === 'upload' ? '25%' :
-                      currentStep === 'crop' ? '50%' :
-                      currentStep === 'preview' ? '75%' :
-                      '100%'
+                        currentStep === 'upload' ? '25%' :
+                          currentStep === 'crop' ? '50%' :
+                            currentStep === 'preview' ? '75%' :
+                              '100%'
                   }}
                 ></div>
               </div>
             </div>
-            
+
             {currentStep !== "select" && (
               <button
                 onClick={handleReset}
@@ -578,7 +714,7 @@ const UserPhotoFraming: React.FC = () => {
                 <p className="text-gray-600">
                   Select a frame, upload your photo, and create shareable moments in seconds.
                 </p>
-                
+
                 <div className="mt-6 relative max-w-md mx-auto">
                   <input
                     type="text"
@@ -598,7 +734,7 @@ const UserPhotoFraming: React.FC = () => {
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No matching frames</h3>
                   <p className="text-gray-600 mb-4">
-                    No frames match your search for &quot;{searchQuery}&quot;. Try a different search term.
+                    No frames match your search for "{searchQuery}". Try a different search term.
                   </p>
                   <button
                     onClick={() => setSearchQuery("")}
@@ -620,10 +756,10 @@ const UserPhotoFraming: React.FC = () => {
                       onMouseEnter={() => setHoveredFrame(frame._id)}
                       onMouseLeave={() => setHoveredFrame(null)}
                     >
-                      <div 
+                      <div
                         style={{
                           aspectRatio: `${frame.dimensions.width} / ${frame.dimensions.height}`,
-                        }} 
+                        }}
                         className="relative flex items-center justify-center overflow-hidden bg-gray-50"
                       >
                         <NextImage
@@ -634,9 +770,9 @@ const UserPhotoFraming: React.FC = () => {
                           className="w-full h-full object-contain p-2"
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                         />
-                        
+
                         <div className="absolute top-2 right-2 z-10 flex space-x-1">
-                          <button 
+                          <button
                             onClick={(e) => handleCopyFrameLink(frame._id, e)}
                             className="p-1.5 rounded-full bg-white/80 hover:bg-white shadow-sm transition-colors"
                             aria-label="Copy share link"
@@ -648,22 +784,22 @@ const UserPhotoFraming: React.FC = () => {
                               <LinkIcon className="h-4 w-4 text-gray-500" />
                             )}
                           </button>
-                          
-                          <button 
+
+                          <button
                             onClick={(e) => toggleFavorite(frame._id, e)}
                             className="p-1.5 rounded-full bg-white/80 hover:bg-white shadow-sm transition-colors"
                             aria-label={favoriteFrames.includes(frame._id) ? "Remove from favorites" : "Add to favorites"}
                             title={favoriteFrames.includes(frame._id) ? "Remove from favorites" : "Add to favorites"}
                           >
-                            <Heart 
-                              className={`h-4 w-4 ${favoriteFrames.includes(frame._id) 
-                                ? 'text-red-500 fill-red-500' 
-                                : 'text-gray-400'}`} 
+                            <Heart
+                              className={`h-4 w-4 ${favoriteFrames.includes(frame._id)
+                                ? 'text-red-500 fill-red-500'
+                                : 'text-gray-400'}`}
                             />
                           </button>
                         </div>
                       </div>
-                      
+
                       <div className="p-3 border-t border-gray-100">
                         <h3 className="text-sm font-medium text-gray-900 truncate">
                           {frame.name}
@@ -672,7 +808,7 @@ const UserPhotoFraming: React.FC = () => {
                           {frame.dimensions.width} × {frame.dimensions.height} px
                         </p>
                       </div>
-                      
+
                       <div className="absolute inset-0 bg-blue-500/10 flex items-center justify-center opacity-0 
                         group-hover:opacity-100 transition-opacity duration-200">
                         <div className="bg-white shadow-md rounded-md py-2 px-4 text-blue-500 font-medium">
@@ -683,11 +819,11 @@ const UserPhotoFraming: React.FC = () => {
                   ))}
                 </div>
               )}
-              
+
               {favoriteFrames.length > 0 && (
                 <div className="mt-10 pt-6 border-t border-gray-200">
                   <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                    <Heart className="h-4 w-4 mr-2 text-red-500 fill-red-500" /> 
+                    <Heart className="h-4 w-4 mr-2 text-red-500 fill-red-500" />
                     Your Favorite Frames
                   </h2>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -699,10 +835,10 @@ const UserPhotoFraming: React.FC = () => {
                           className="group relative rounded-md overflow-hidden cursor-pointer bg-white border border-gray-200 hover:border-red-400 hover:shadow-sm transition-all"
                           onClick={() => handleSelectFrame(frame)}
                         >
-                          <div 
+                          <div
                             style={{
                               aspectRatio: `${frame.dimensions.width} / ${frame.dimensions.height}`,
-                            }} 
+                            }}
                             className="relative flex items-center justify-center bg-gray-50"
                           >
                             <NextImage
@@ -713,8 +849,8 @@ const UserPhotoFraming: React.FC = () => {
                               className="w-full h-full object-contain p-1"
                               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                             />
-                            
-                            <button 
+
+                            <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleCopyFrameLink(frame._id, e);
@@ -750,16 +886,16 @@ const UserPhotoFraming: React.FC = () => {
                 <h2 className="text-lg font-medium text-gray-900">Upload Your Photo</h2>
                 <p className="text-sm text-gray-500 mt-1">Choose a photo to place in your selected frame</p>
               </div>
-              
+
               <div className="p-6">
                 <div className="flex flex-col lg:flex-row gap-8">
                   <div className="w-full lg:w-1/2 lg:order-2">
                     <div className="bg-white rounded-lg p-4 border border-gray-200 mb-5">
                       <h3 className="text-base font-medium text-gray-700 mb-3">Selected Frame</h3>
-                      <div 
+                      <div
                         style={{
                           aspectRatio: `${selectedFrame.dimensions.width} / ${selectedFrame.dimensions.height}`,
-                        }} 
+                        }}
                         className="rounded-lg overflow-hidden relative flex items-center justify-center bg-gray-50"
                       >
                         <NextImage
@@ -790,7 +926,7 @@ const UserPhotoFraming: React.FC = () => {
                             </li>
                             <li className="flex items-start">
                               <div className="flex-shrink-0 h-4 w-4 inline-flex items-center justify-center rounded-full bg-blue-200 text-blue-600 text-xs mr-2">2</div>
-                              <span>In the next step, you&apos;ll crop your photo to fit the frame</span>
+                              <span>In the next step, you'll crop your photo to fit the frame</span>
                             </li>
                             <li className="flex items-start">
                               <div className="flex-shrink-0 h-4 w-4 inline-flex items-center justify-center rounded-full bg-blue-200 text-blue-600 text-xs mr-2">3</div>
@@ -852,12 +988,10 @@ const UserPhotoFraming: React.FC = () => {
                   <button
                     type="button"
                     disabled={!userImage}
-                    onClick={() => setCurrentStep("crop")}
-                    className={`px-5 py-2 text-white rounded-md text-sm font-medium transition-colors flex items-center ${
-                      userImage 
-                        ? 'bg-blue-500 hover:bg-blue-600' 
+                    className={`px-5 py-2 text-white rounded-md text-sm font-medium transition-colors flex items-center ${userImage
+                        ? 'bg-blue-500 hover:bg-blue-600'
                         : 'bg-gray-400 cursor-not-allowed'
-                    }`}
+                      }`}
                   >
                     Continue <ArrowRight className="h-4 w-4 ml-2" />
                   </button>
@@ -874,8 +1008,20 @@ const UserPhotoFraming: React.FC = () => {
                   Adjust your photo to perfectly fit the frame
                 </p>
               </div>
-              
+
               <div className="p-6">
+                {/* New mobile-friendly crop controls */}
+                {isMobileDevice && (
+                  <div className="flex justify-center mb-4 space-x-3">
+                    <button
+                      onClick={handleAutoFit}
+                      className="px-3 py-1.5 bg-blue-500 text-white rounded-md text-sm font-medium flex items-center"
+                    >
+                      <Maximize2 className="h-4 w-4 mr-1" /> Auto-Fit
+                    </button>
+                  </div>
+                )}
+
                 <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200 p-4 mb-6 relative">
                   <div className="flex items-center justify-center">
                     <ReactCrop
@@ -885,12 +1031,10 @@ const UserPhotoFraming: React.FC = () => {
                       aspect={aspect}
                       className="max-h-[500px] max-w-full"
                     >
-                      <NextImage
+                      <img
                         ref={userImgRef}
                         src={userImage}
                         alt="User uploaded image"
-                        width={500}
-                        height={500}
                         onLoad={onImageLoad}
                         className="max-h-[500px] max-w-full object-contain"
                       />
@@ -899,7 +1043,7 @@ const UserPhotoFraming: React.FC = () => {
 
                   <div className="absolute bottom-4 left-4 bg-white shadow-sm text-gray-700 text-xs px-3 py-1.5 rounded-full flex items-center">
                     <CropIcon className="h-3 w-3 mr-1.5" />
-                    Drag corners to adjust crop
+                    {isMobileDevice ? "Pinch or drag to adjust" : "Drag corners to adjust crop"}
                   </div>
                 </div>
 
@@ -912,10 +1056,22 @@ const UserPhotoFraming: React.FC = () => {
 
                     <div className="space-y-4">
                       <p className="text-sm text-gray-600">
-                        Drag the corners of the selection box to perfectly crop your photo. The crop ratio is locked to match the frame&apos;s photo area dimensions.
+                        {isMobileDevice
+                          ? "Drag the corners of the selection box to crop your photo. Use the Auto-Fit button for a perfect fit."
+                          : "Drag the corners of the selection box to perfectly crop your photo. The crop ratio is locked to match the frame's photo area dimensions."
+                        }
                       </p>
 
-                      <div className="mt-4">
+                      {!isMobileDevice && (
+                        <button
+                          onClick={handleAutoFit}
+                          className="mt-3 px-3 py-1.5 bg-blue-500 text-white rounded-md text-sm font-medium flex items-center"
+                        >
+                          <Maximize2 className="h-4 w-4 mr-1.5" /> Auto-Fit to Frame
+                        </button>
+                      )}
+
+                      {/* <div className="mt-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Personalize Your Frame
                         </label>
@@ -926,7 +1082,7 @@ const UserPhotoFraming: React.FC = () => {
                           placeholder="Enter your name (optional)"
                           className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
-                      </div>
+                      </div> */}
                     </div>
                   </div>
 
@@ -942,7 +1098,7 @@ const UserPhotoFraming: React.FC = () => {
                       </li>
                       <li className="flex items-start">
                         <div className="flex-shrink-0 h-4 w-4 inline-flex items-center justify-center rounded-full bg-blue-200 text-blue-600 text-xs mr-2">2</div>
-                        <span>The aspect ratio is fixed to match the frame&apos;s photo area</span>
+                        <span>The aspect ratio is fixed to match the frame's photo area</span>
                       </li>
                       <li className="flex items-start">
                         <div className="flex-shrink-0 h-4 w-4 inline-flex items-center justify-center rounded-full bg-blue-200 text-blue-600 text-xs mr-2">3</div>
@@ -950,7 +1106,7 @@ const UserPhotoFraming: React.FC = () => {
                       </li>
                       <li className="flex items-start">
                         <div className="flex-shrink-0 h-4 w-4 inline-flex items-center justify-center rounded-full bg-blue-200 text-blue-600 text-xs mr-2">4</div>
-                        <span>When you&apos;re happy with the crop, click &quot;Apply Crop&quot;</span>
+                        <span>{isMobileDevice ? "Use Auto-Fit for best results" : "When you're happy with the crop, click \"Apply Crop\""}</span>
                       </li>
                     </ul>
                   </div>
@@ -994,7 +1150,7 @@ const UserPhotoFraming: React.FC = () => {
                   This is how your final framed photo will look
                 </p>
               </div>
-              
+
               <div className="p-6">
                 <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200 p-4 mb-6 flex items-center justify-center relative">
                   {isLoading && (
@@ -1005,8 +1161,8 @@ const UserPhotoFraming: React.FC = () => {
                       </div>
                     </div>
                   )}
-                  
-                  <div 
+
+                  <div
                     className="relative"
                     style={{
                       width: 'auto',
@@ -1039,7 +1195,7 @@ const UserPhotoFraming: React.FC = () => {
 
                     <div className="space-y-4">
                       <p className="text-sm text-gray-600">
-                        This is how your framed photo will look. If you&apos;re happy with it, click &quot;Generate Final Image&quot; to create your shareable picture.
+                        This is how your framed photo will look. If you're happy with it, click "Generate Final Image" to create your shareable picture.
                       </p>
 
                       <div className="mt-4">
@@ -1068,16 +1224,16 @@ const UserPhotoFraming: React.FC = () => {
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 text-sm text-gray-600">
                     <h4 className="font-medium text-gray-700 mb-3 flex items-center">
                       <Info className="h-4 w-4 mr-2 text-blue-500" />
-                      What&apos;s Next?
+                      What's Next?
                     </h4>
                     <ul className="space-y-3">
                       <li className="flex items-start">
                         <div className="flex-shrink-0 h-4 w-4 inline-flex items-center justify-center rounded-full bg-gray-200 text-gray-700 text-xs mr-2">1</div>
-                        <span>When you click &quot;Generate Final Image&quot;, your photo will be processed</span>
+                        <span>When you click "Generate Final Image", your photo will be processed</span>
                       </li>
                       <li className="flex items-start">
                         <div className="flex-shrink-0 h-4 w-4 inline-flex items-center justify-center rounded-full bg-gray-200 text-gray-700 text-xs mr-2">2</div>
-                        <span>You&apos;ll be able to download your framed photo</span>
+                        <span>You'll be able to download your framed photo</span>
                       </li>
                       <li className="flex items-start">
                         <div className="flex-shrink-0 h-4 w-4 inline-flex items-center justify-center rounded-full bg-gray-200 text-gray-700 text-xs mr-2">3</div>
@@ -1085,7 +1241,7 @@ const UserPhotoFraming: React.FC = () => {
                       </li>
                       <li className="flex items-start">
                         <div className="flex-shrink-0 h-4 w-4 inline-flex items-center justify-center rounded-full bg-gray-200 text-gray-700 text-xs mr-2">4</div>
-                        <span>If you need to make changes, use the &quot;Back&quot; button</span>
+                        <span>If you need to make changes, use the "Back" button</span>
                       </li>
                     </ul>
                   </div>
@@ -1134,12 +1290,12 @@ const UserPhotoFraming: React.FC = () => {
           {currentStep === "complete" && finalImage && selectedFrame && (
             <div className="max-w-4xl mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mt-6">
               <div className="bg-gray-50 p-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-900">Your Ascendantly Your Framed Photo is Ready!</h2>
+                <h2 className="text-lg font-medium text-gray-900">Your Framed Photo is Ready!</h2>
                 <p className="text-sm text-gray-500 mt-1">
                   Download or share your creation
                 </p>
               </div>
-              
+
               <div className="p-6">
                 <div className="text-center mb-6">
                   <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 text-green-600 mb-3">
@@ -1172,14 +1328,14 @@ const UserPhotoFraming: React.FC = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="lg:col-span-1">
                     <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
                       <h3 className="text-base font-medium text-gray-700 mb-4 flex items-center">
                         <Save className="h-4 w-4 mr-2 text-blue-500" />
                         Download Options
                       </h3>
-                      
+
                       <a
                         href={finalImage}
                         download={`framed-photo-${selectedFrame.name.replace(/\s+/g, '-').toLowerCase()}.png`}
@@ -1188,7 +1344,7 @@ const UserPhotoFraming: React.FC = () => {
                         <Save className="h-4 w-4 mr-2" />
                         Download Image
                       </a>
-                      
+
                       <button
                         type="button"
                         onClick={handleReset}
@@ -1198,13 +1354,13 @@ const UserPhotoFraming: React.FC = () => {
                         Create Another
                       </button>
                     </div>
-                    
-                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+
+                    <div className="bg-white rounded-lg p-4 border border-gray-200 hidden md:block">
                       <h3 className="text-base font-medium text-gray-700 mb-4 flex items-center">
                         <Share2 className="h-4 w-4 mr-2 text-blue-500" />
                         Share Your Creation
                       </h3>
-                      
+
                       <button
                         type="button"
                         onClick={handleShare}
@@ -1216,13 +1372,13 @@ const UserPhotoFraming: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
                   <h4 className="text-base font-medium text-gray-800 mb-2">
                     Thank You for Using Our Photo Framing Tool!
                   </h4>
                   <p className="text-gray-600 mb-4">
-                    We hope you enjoyed creating your framed photo. Don&apos;t forget to download your creation and share it with your friends and family!
+                    We hope you enjoyed creating your framed photo. Don't forget to download your creation and share it with your friends and family!
                   </p>
                   <button
                     type="button"
@@ -1238,7 +1394,7 @@ const UserPhotoFraming: React.FC = () => {
           )}
         </div>
       </main>
-      
+
       {(currentStep === "select" || currentStep === "upload") && (
         <section className="bg-white border-t border-gray-200 py-10 mt-6">
           <div className="max-w-5xl mx-auto px-4">
@@ -1256,7 +1412,7 @@ const UserPhotoFraming: React.FC = () => {
                   Choose from our collection of beautiful frames designed for every occasion.
                 </p>
               </div>
-              
+
               <div className="flex flex-col items-center text-center">
                 <div className="relative w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                   <CropIcon className="h-8 w-8 text-blue-600" />
@@ -1269,7 +1425,7 @@ const UserPhotoFraming: React.FC = () => {
                   Upload and crop your favorite photo to fit perfectly in the frame.
                 </p>
               </div>
-              
+
               <div className="flex flex-col items-center text-center">
                 <div className="relative w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                   <Share2 className="h-8 w-8 text-blue-600" />
@@ -1286,15 +1442,15 @@ const UserPhotoFraming: React.FC = () => {
           </div>
         </section>
       )}
-      
+
       <footer className="bg-gray-50 border-t border-gray-200 py-6 mt-auto">
         <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
           <div className="text-center md:text-left mb-4 md:mb-0">
             <p className="text-gray-600 text-sm">
-              © {new Date().getFullYear()} Photo Framing Studio. All rights reserved.
+              © {new Date().getFullYear()} SUHBA Union. All rights reserved.
             </p>
           </div>
-          
+
           <div className="flex space-x-6">
             <a href="#" className="text-gray-500 hover:text-gray-700 transition-colors text-sm">Terms</a>
             <a href="#" className="text-gray-500 hover:text-gray-700 transition-colors text-sm">Privacy</a>

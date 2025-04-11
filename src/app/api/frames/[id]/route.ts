@@ -15,19 +15,9 @@ const getFilenameFromUrl = (url: string): string | null => {
     }
 };
 
-// Define the type for update data
-interface FrameUpdateData {
-    name: string;
-    imageUrl: string;
-    dimensions: { width: number; height: number };
-    placementCoords: { x: number; y: number; width: number; height: number };
-    textSettings: { x: number; y: number; width: number; height: number; font: string; size: number; color: string };
-    isActive: boolean;
-    usageCount?: number; // Optional since it's only included when incrementUsage is true
-}
-
 // GET handler
 export async function GET(
+    request: NextRequest,
     context: { params: Promise<{ id: string }> | { id: string } }
 ) {
     try {
@@ -173,7 +163,7 @@ export async function PUT(
                 }
             }
 
-            const updateData: FrameUpdateData = {
+            const updateData: any = {
                 name,
                 imageUrl,
                 dimensions,
@@ -233,6 +223,7 @@ export async function PUT(
 
 // DELETE handler
 export async function DELETE(
+    request: NextRequest,
     context: { params: Promise<{ id: string }> | { id: string } }
 ) {
     try {
